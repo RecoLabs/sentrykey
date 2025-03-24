@@ -82,7 +82,8 @@ def create_iam_role(iam_client):
                     {
                         "Effect": "Allow",
                         "Action": [
-                            "bedrock:ListFoundationModels"
+                            "bedrock:ListFoundationModels",
+                            "bedrock:InvokeModel",
                         ],
                         "Resource": "*"
                     },
@@ -263,11 +264,11 @@ def ensure_layer_exists():
         except Exception as e:
             raise Exception(f"AWS credentials not configured correctly: {str(e)}")
             
-        if not os.path.exists('lambda_layer_builder.sh'):
+        if not os.path.exists('setup/lambda_layer_builder.sh'):
             raise Exception("lambda_layer_builder.sh script not found")
             
         # Make the script executable
-        os.chmod('lambda_layer_builder.sh', 0o755)
+        os.chmod('setup/lambda_layer_builder.sh', 0o755)
         
         # Check Python installation
         python_cmd = None
@@ -284,7 +285,7 @@ def ensure_layer_exists():
             
         # Run the layer builder script with error output
         print("Running lambda_layer_builder.sh...")
-        result = os.system('./lambda_layer_builder.sh')
+        result = os.system('./setup/lambda_layer_builder.sh')
         if result != 0:
             raise Exception(f"Layer creation failed with exit code {result}")
             
@@ -401,7 +402,7 @@ def create_lambda_function(lambda_client, role_arn, secret_arn):
                     FunctionName='slack-secret-detector',
                     Runtime='python3.9',
                     Role=role_arn,
-                    Handler='src.lambda_function.lambda_handler',
+                    Handler='src.lambda.lambda_handler',
                     Code={'ZipFile': lambda_code},
                     Description='Detects secrets and sensitive information in Slack messages',
                     Timeout=30,
